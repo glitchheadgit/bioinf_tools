@@ -41,9 +41,9 @@ Optional arguments:
 - quality_threshold - int, minimum mean quality of a sequence
 
 ```python
-filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, gc_bounds = 50)
+filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, gc_bounds=50)
 ## Blank fasta
-filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, quality_threshold = 0)
+filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, quality_threshold=0)
 ## fasta file
 # >BEST_SEQ_EVER
 # GG
@@ -65,7 +65,7 @@ Converts multiline fasta to oneline fasta.
     Name of the output oneline fasta file. If not specified name will be the same as the original file.
 
 ```python
-    convert_multiline_fasta_to_oneline('bad.fasta', 'good')
+convert_multiline_fasta_to_oneline('bad.fasta', 'good')
 ## bad.fasta
 # >my_genome
 # AGCTA
@@ -232,7 +232,7 @@ Function gets on input a sequence or an array of sequences and check if a sequen
 ## length
 
 ```python
-length(['AtAT','ATGcTG','AugcA']) # returns [4, 6, 5]
+dna_rna_tools('AtAT','AGCA','Augc','length') # returns [4, 4, 4]
 ```
 
 Function gets on input a sequence or an array of sequences and returns sequence length value or an array of values.
@@ -240,7 +240,7 @@ Function gets on input a sequence or an array of sequences and returns sequence 
 ## is_palindrome
 
 ```python
-is_palindrome(['AtAT','ATGc','Augc']) # returns [True, False, False]
+dna_rna_tools('AtAT','ATGc','Augc','is_palindrome') # returns [True, False, False]
 ```
 
 Function gets on input a sequence or an array of sequences checks if a sequence/sequences are palindrome and returns True, False value or an array of values.

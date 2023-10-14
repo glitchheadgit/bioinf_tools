@@ -1,9 +1,10 @@
+import os
+import sys
+from typing import Union, Dict, List, Tuple
+
 from modules import fastq_module
 from modules import protein_module
 from modules import dna_module
-from typing import Union, Dict, List, Tuple
-import os
-import sys
 
 
 NUCLEOTIDES = {'a', 't', 'g', 'c', 'u'}
