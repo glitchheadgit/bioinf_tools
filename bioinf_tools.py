@@ -2,20 +2,23 @@ from modules import fastq_module
 from modules import protein_module
 from modules import dna_module
 from typing import Union, Dict, List, Tuple
+import os
 import sys
 
 
 NUCLEOTIDES = {'a', 't', 'g', 'c', 'u'}
 
 
-def filter_fastq(seqs: Dict[str, Tuple[str, str]], gc_bounds: Union[int, float, Tuple[Union[int, float], Union[int, float]]]= (0, 100), length_bounds: Union[int, Tuple[int, int]] = (0, 2**32), quality_threshold: int = 0) -> Dict[str, Tuple[str, str]]:
+def filter_fastq(input_path: str, gc_bounds: Union[int, float, Tuple[Union[int, float], Union[int, float]]]= (0, 100), length_bounds: Union[int, Tuple[int, int]] = (0, 2**32), quality_threshold: int = 0, output_filename: str = None) -> None:
     """
     Filters appropriate sequences.
 
     Arguments
     ----------
-    seqs : Dict[str, Tuple[str, str]]
-        Dictionary of sequences, name is a key, tuple of nucleotide sequence and according quality sequence is a value.
+    input_path: str
+        Path to fastq file
+    output_filename: str
+        Name of filtered fastq file
     gc_bounds: Union[int, float, Tuple[Union[int,float], Union[int,float]]
         Filter parameter (in percents) of gc composition. Tuple associated with lowest and highest levels of gc content in  sequences, also it can get on input int or float associated with highest level of gc content, lowest level will be set to 0.
     length_bounds: Union[int, Tuple[int, int]]
@@ -23,10 +26,9 @@ def filter_fastq(seqs: Dict[str, Tuple[str, str]], gc_bounds: Union[int, float, 
     quality_threshold: int
         Filter parameter of mean sequence quality. Sets lowest mean quality of sequences.
 
-    Returns
-    -------
-    Dictionary in the same style as input dictionary with sequences that proceeded filtration.
+    Saves filtered sequences in a fastq file named input_path/output_filename.
     """
+    seqs = fastq_module.read_fastq(input_path)
     if isinstance(gc_bounds, int) or isinstance(gc_bounds, float):
         gc_bounds = (0, gc_bounds)
     if isinstance(length_bounds, int) or isinstance(length_bounds, float):
@@ -43,7 +45,11 @@ def filter_fastq(seqs: Dict[str, Tuple[str, str]], gc_bounds: Union[int, float, 
         if mean_quality < quality_threshold:
             continue
         seqs_filtered[name] = seq
-    return seqs_filtered
+    if output_filename is None:
+        output_filename = os.path.basename(input_path)
+    else:
+        output_filename += '.fastq'
+    fastq_module.write_fastq(output_filename, seqs_filtered)
 
 
 def protein_tool(*args: str) -> Union[str, List[Union[Dict[str, int], str]]]:

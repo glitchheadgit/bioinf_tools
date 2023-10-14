@@ -5,6 +5,8 @@ This Python utility allows you to work with protein, DNA, RNA sequences and fast
 ## Table of Contents
 
 - [Installation](#installation)
+- [Bio files processor](#bio_files_processor)
+- [Additional scripts](#change_fasta_start_pos)
 - [Fastq tool](#fastq_tool)
 - [RNA DNA tool](#rna_dna_tool)
 - [Protein tool](#protein_tool)
@@ -22,9 +24,15 @@ Python3
 
 ## filter_fastq
 
-Function gets on input a dictionary with names of sequences as keys and tuple of sequence and it's quality as value. Function filters sequences according to defined parameters: GC content, length, mean quality - and returns dictionary of filtered sequences.
+Function gets on input a fastq file. Function filters sequences according to defined parameters: GC content, length, mean quality - and saves filtered sequences in a fastq file named input_path or output_filename.
+
+Required arguments:
+
+- input_path - str of a path to the fastq file. 
 
 Optional arguments:
+
+- output_filename - str of a filename in which filtered sequences will be writed.
 
 - gc_bounds - int, float of max value or tuple with min and max values. Default = (0, 100)
 
@@ -34,15 +42,151 @@ Optional arguments:
 
 ```python
 filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, gc_bounds = 50)
-# Returns {}
+## Blank fasta
 filter_fastq({'BEST_SEQ_EVER':('GG', '!!')}, quality_threshold = 0)
-# Returns {'BEST_SEQ_EVER':('GG', '!!')}
+## fasta file
+# >BEST_SEQ_EVER
+# GG
+# +BEST_SEQ_EVER
+# !!
+```
+
+# bio_files_processor
+
+## convert_multiline_fasta_to_oneline
+
+Converts multiline fasta to oneline fasta.
+
+**Arguments**:
+
+- input_fasta: str
+    Path to the multiline fasta
+- output_fasta: str (optional)
+    Name of the output oneline fasta file. If not specified name will be the same as the original file.
+
+```python
+    convert_multiline_fasta_to_oneline('bad.fasta', 'good')
+## bad.fasta
+# >my_genome
+# AGCTA
+# CG
+## good.fasta
+# >my_genome
+# AGCTACG
+```
+
+## select_gene_from_gbk
+
+Selects genes around gene of interest in gbk file.
+
+**Arguments**:
+
+- input_gbk: str
+    Path to the gbk file
+- target_gene: str
+    Name of the target gene
+- n_before: int
+    Number of genes we want to get before target
+- n_after: int
+    Number of genes we want to get after target
+
+**Returns**:
+Tuple of two lists: genes before and after target, which consists of tuples with name of a gene and it's aminoacid sequence
+
+```python
+select_gene_from_gbk('input.gbk', 'yeeW', 3, 3)
+# Returns:
+# ([('galT_before_modE', 'MTQFNPVDHPHRRYNPLTGQWILVSPHRAKRPWQGAQETPAKQVLPAHDPDCFLCAGNVRVTGDKNPDYTRTYVFTNDFAALMSDTPDAPESNDPLMRCQSARGTSRVICFSPDHSKTLPELSVAALTEIVKTWQEQTAELGKTYPWVQVFENKGAAMGCSNPHPHGQIWANSFLPNEAEREDRLQKEYFAEQKSPMLVDYVQRELADGSRTVVETEHWLAVVPYWAAWPFETLLLPKAHVLRITDLTDAQRSDLALALKKLTSRYDNLFQCSFPYSMGWHGAPFNGEENQHWQLHAHFYPPLLRSATVRKFMVGYEMLAETQRDLTAEQAAERLRAVSDIHFRESGV'), ('galE_before_modE', 'MRVLVTGGSGYIGSHTCVQLLQNGHDVIILDNLCNSKRSVLPVIERLGGKHPTFVEGDIRNEALMTEILHDHAIDTVIHFAGLKAVGESVQKPLEYYDNNVNGTLRLISAMRAANVKNFIFSSSATVYGDQPKIPYVESFPTGTPQSPYGKSKLMVEQILTDLQKAQPDWSIALLRYFNPVGAHPSGDMGEDPQGIPNNLMPYIAQVAVGRRDSLAIFGNDYPTEDGTGVRDYIHVMDLADGHVVAMEKLANKPGVHIYNLGAGVGNSVLDVVNAFSKACGKPVNYHFAPRREGDLPAYWADASKADRELNWRVTRTLDEMAQDTWHWQSRHPQGYPD'), ('modF_before_modE', 'MSSLQILQGTFRLSDTKTLQLPQLTLNAGDSWAFVGSNGSGKSALARALAGELPLLKGERQSQFSHITRLSFEQLQKLVSDEWQRNNTDMLGPGEDDTGRTTAEIIQDEVKDAPRCMQLAQQFGITALLDRRFKYLSTGETRKTLLCQALMSEPDLLILDEPFDGLDVASRQQLAERLASLHQSGITLVLVLNRFDEIPEFVQFAGVLADCTLAETGAKEELLQQALVAQLAHSEQLEGVQLPEPDEPSARHALPTNEPRIVLNNGVVSYNDRPILNNLSWQVNPGEHWQIVGPNGAGKSTLLSLITGDHPQGYSNDLTLFGRRRGSGETIWDIKKHIGYVSSSLHLDYRVSTTVRNVILSGYFDSIGIYQAVSDRQQKLVQQWLDILGIDKRTADAPFHSLSWGQQRLALIVRALVKHPTLLILDEPLQGLDPLNRQLIRRFVDVLISEGETQLLFVSHHAEDAPACITHRLEFVPDGGLYRYVLTKIY')], [('acrZ_after_modE', 'MLELLKSLVFAVIMVPVVMAIILGLIYGLGEVFNIFSGVGKKDQPGQNH'), ('modA_after_modE', 'MARKWLNLFAGAALSFAVAGNALADEGKITVFAAASLTNAMQDIATQYKKEKGVDVVSSFASSSTLARQIEAGAPADLFISADQKWMDYAVDKKAIDTASRQTLLGNSLVVVAPKASEQKDFTIDSKTNWTSLLNGGRLAVGDPEHVPAGIYAKEALQKLGAWDTLSPKLAPAEDVRGALALVERNEAPLGIVYGSDAVASKGVKVVATFPEDSHKKVEYPVAVVEGHNNATVKAFYDYLKGPQAAEIFKRYGFTTK'), ('modB_after_modE', 'MILTDPEWQAVLLSLKVSSLAVLFSLPFGIFFAWLLVRCTFPGKALLDSVLHLPLVLPPVVVGYLLLVSMGRRGFIGERLYDWFGITFAFSWRGAVLAAAVMSFPLMVRAIRLALEGVDVKLEQAARTLGAGRWRVFFTITIPLTLPGIIVGTVLAFARSLGEFGATITFVSNIPGETRTIPSAMYTLIQTPGGESGAARLCIISIALAMISLLISEWLARISRERAGR')])
+```
+
+## select_genes_from_gbk_to_fasta
+
+Writes output of select_gene_from_gbk to fasta file
+
+**Arguments**:
+
+- input_gbk: str
+    Path to gbk file
+- genes: List[str]
+    List of genes of interest
+- n_before: int
+    Number of genes to get before target
+- n_after: int
+    Number of genes to get after target
+- output_fasta: str (optional)
+    Name of output file. If not specified name will be the same as input file.
+
+```python
+select_genes_from_gbk_to_fasta('input.gbk', ['modE'], 3, 3, 'output.gbk']
+# output.gbk
+##>galT_before_modE
+##MTQFNPVDHPHRRYNPLTGQWILVSPHRAKRPWQGAQETPAKQVLPAHDPDCFLCAGNVRVTGDKNPDYTRTYVFTNDFAALMSDTPDAPESNDPLMRCQSARGTSRVICFSPDHSKTLPELSVAALTEIVKTWQEQTAELGKTYPWVQVFENKGAAMGCSNPHPHGQIWANSFLPNEAEREDRLQKEYFAEQKSPMLVDYVQRELADGSRTVVETEHWLAVVPYWAAWPFETLLLPKAHVLRITDLTDAQRSDLALALKKLTSRYDNLFQCSFPYSMGWHGAPFNGEENQHWQLHAHFYPPLLRSATVRKFMVGYEMLAETQRDLTAEQAAERLRAVSDIHFRESGV
+##>galE_before_modE
+##MRVLVTGGSGYIGSHTCVQLLQNGHDVIILDNLCNSKRSVLPVIERLGGKHPTFVEGDIRNEALMTEILHDHAIDTVIHFAGLKAVGESVQKPLEYYDNNVNGTLRLISAMRAANVKNFIFSSSATVYGDQPKIPYVESFPTGTPQSPYGKSKLMVEQILTDLQKAQPDWSIALLRYFNPVGAHPSGDMGEDPQGIPNNLMPYIAQVAVGRRDSLAIFGNDYPTEDGTGVRDYIHVMDLADGHVVAMEKLANKPGVHIYNLGAGVGNSVLDVVNAFSKACGKPVNYHFAPRREGDLPAYWADASKADRELNWRVTRTLDEMAQDTWHWQSRHPQGYPD
+##>modF_before_modE
+##MSSLQILQGTFRLSDTKTLQLPQLTLNAGDSWAFVGSNGSGKSALARALAGELPLLKGERQSQFSHITRLSFEQLQKLVSDEWQRNNTDMLGPGEDDTGRTTAEIIQDEVKDAPRCMQLAQQFGITALLDRRFKYLSTGETRKTLLCQALMSEPDLLILDEPFDGLDVASRQQLAERLASLHQSGITLVLVLNRFDEIPEFVQFAGVLADCTLAETGAKEELLQQALVAQLAHSEQLEGVQLPEPDEPSARHALPTNEPRIVLNNGVVSYNDRPILNNLSWQVNPGEHWQIVGPNGAGKSTLLSLITGDHPQGYSNDLTLFGRRRGSGETIWDIKKHIGYVSSSLHLDYRVSTTVRNVILSGYFDSIGIYQAVSDRQQKLVQQWLDILGIDKRTADAPFHSLSWGQQRLALIVRALVKHPTLLILDEPLQGLDPLNRQLIRRFVDVLISEGETQLLFVSHHAEDAPACITHRLEFVPDGGLYRYVLTKIY
+##>acrZ_after_modE
+##MLELLKSLVFAVIMVPVVMAIILGLIYGLGEVFNIFSGVGKKDQPGQNH
+##>modA_after_modE
+##MARKWLNLFAGAALSFAVAGNALADEGKITVFAAASLTNAMQDIATQYKKEKGVDVVSSFASSSTLARQIEAGAPADLFISADQKWMDYAVDKKAIDTASRQTLLGNSLVVVAPKASEQKDFTIDSKTNWTSLLNGGRLAVGDPEHVPAGIYAKEALQKLGAWDTLSPKLAPAEDVRGALALVERNEAPLGIVYGSDAVASKGVKVVATFPEDSHKKVEYPVAVVEGHNNATVKAFYDYLKGPQAAEIFKRYGFTTK
+##>modB_after_modE
+##MILTDPEWQAVLLSLKVSSLAVLFSLPFGIFFAWLLVRCTFPGKALLDSVLHLPLVLPPVVVGYLLLVSMGRRGFIGERLYDWFGITFAFSWRGAVLAAAVMSFPLMVRAIRLALEGVDVKLEQAARTLGAGRWRVFFTITIPLTLPGIIVGTVLAFARSLGEFGATITFVSNIPGETRTIPSAMYTLIQTPGGESGAARLCIISIALAMISLLISEWLARISRERAGR
+```
+
+# Additional scripts
+
+## change_fasta_start_pos
+
+Changes fasta start position.
+
+**Arguments**:
+
+- input_fasta: str
+    Path to the input fasta file
+- shift: int
+    Number of shift
+- output_fasta:
+    Path to output file
+
+```python
+change_fasta_start_pos('input.fasta', 2, 'output)
+## input.fasta
+# >genome
+# ATGCA
+## output.fasta
+# >genome
+# GCAAT
+```
+
+## parse_blast_output
+
+Parses blast output. Saves list of the most accurate proteins findings on each query.
+
+**Arguments**:
+
+- input_file: str
+    Path to blast output
+- output_file: str
+    Path to output file
+
+```python
+parse_blast_output('input.txt', 'output')
+#output.fasta
+##DNA methylase [Enterobacteriaceae]
+##DUF1380 domain-containing protein [Escherichia coli]
+##DUF1380 family protein [Enterobacteriaceae]
+##DUF4158 domain-containing protein [Klebsiella pneumoniae]
+##DUF905 domain-containing protein, partial [Shigella sonnei]
+##DinI-like family protein [Escherichia coli]
+##KlcA [Escherichia coli]
+##PilI type IV pilus biogenesis protein, partial [Salmonella enterica]
+##PilK [Escherichia coli]
+##PsiB [Escherichia coli]
 ```
 
 # rna_dna_tool
 
 Function gets on input a command name and a sequence or an array of sequences. Function delets non nucleotide sequences and sends sequences to subfunction(command). Prints returned value from subfunction.
-
 **Commands**:
 
 ## transcribe
