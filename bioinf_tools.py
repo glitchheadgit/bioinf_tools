@@ -4,6 +4,7 @@ from typing import (
     Union,
     Dict,
     Tuple,
+    Set,
     Self
 )  # для импорта Self нужен python >= 3.11 или используйте импорт ниже
 # from typing_extensions import Self
@@ -31,10 +32,22 @@ class BiologicalSequence(ABC):
 
 
 class ExpressedSequences(BiologicalSequence):
-    def __init__(self, seq: str) -> None:
-        self.seq = seq.upper()
-        self.letters = set(self.seq)
-        self._alphabet = None
+    def __init__(self, seq: str, alphabet: Set[str]) -> None:
+        self.letters = set(seq)
+        self.seq = seq
+        self._alphabet = alphabet
+
+    @property
+    def seq(self):
+        return self._seq
+
+    @seq.setter
+    def seq(self, s):
+        if not s:
+            raise ValueError("Sequence can't be empty!")
+        if not self.check_alphabet():
+            raise ValueError("Sequence contains incorrect symbols!")
+        self._seq = s
 
     def __len__(self) -> int:
         return len(self.seq)
@@ -46,8 +59,6 @@ class ExpressedSequences(BiologicalSequence):
         return self.seq
 
     def check_alphabet(self) -> bool:
-        if self._alphabet is None:
-            raise NotImplementedError
         return all([x in self._alphabet for x in self.letters]) and not (
             "U" in self.letters and "T" in self.letters
         )
@@ -55,8 +66,8 @@ class ExpressedSequences(BiologicalSequence):
 
 class NucleicAcidSequence(ExpressedSequences):
     def __init__(self, seq: str) -> None:
-        super().__init__(seq)
         self._alphabet = {"A", "T", "G", "C", "U"}
+        super().__init__(seq, self._alphabet)
         self._complement_table = None
 
     def complement(self) -> "Self":
@@ -72,7 +83,7 @@ class NucleicAcidSequence(ExpressedSequences):
 
 
 class DNASequence(NucleicAcidSequence):
-    def __init__(self, seq: str):
+    def __init__(self, seq: str) -> None:
         super().__init__(seq)
         self._complement_table = {"T": "A", "A": "T", "C": "G", "G": "C"}
         self._transcribe_table = {
@@ -92,12 +103,11 @@ class DNASequence(NucleicAcidSequence):
 class RNASequence(NucleicAcidSequence):
     def __init__(self, seq: str):
         super().__init__(seq)
-        self._complement_table = {"A": "U", "u": "A", "C": "G", "G": "C"}
+        self._complement_table = {"A": "U", "U": "A", "C": "G", "G": "C"}
 
 
 class AminoAcidSequence(ExpressedSequences):
     def __init__(self, seq: str) -> None:
-        super().__init__(seq)
         self._alphabet = {
             "A",
             "G",
@@ -120,6 +130,7 @@ class AminoAcidSequence(ExpressedSequences):
             "M",
             "Q",
         }
+        super().__init__(seq, self._alphabet)
         self._positive_aa = {"R", "K", "H"}
         self._negative_aa = {"D", "E"}
 
