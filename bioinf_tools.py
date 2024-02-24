@@ -1,16 +1,157 @@
-import os
-import sys
-from typing import Union, Dict, List, Tuple
+import numpy as np
+from abc import ABC, abstractmethod
+from typing import (
+    Union,
+    Dict,
+    Tuple,
+    Self
+)  # для импорта Self нужен python >= 3.11 или используйте импорт ниже
+# from typing_extensions import Self
 
-from modules import fastq_module
-from modules import protein_module
-from modules import dna_module
+from Bio import SeqIO
+from Bio.SeqUtils import gc_fraction
 
 
-NUCLEOTIDES = {'a', 't', 'g', 'c', 'u'}
+class BiologicalSequence(ABC):
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self, index):
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        pass
+
+    @abstractmethod
+    def check_alphabet(self):
+        pass
 
 
-def filter_fastq(input_path: str, gc_bounds: Union[int, float, Tuple[Union[int, float], Union[int, float]]]= (0, 100), length_bounds: Union[int, Tuple[int, int]] = (0, 2**32), quality_threshold: int = 0, output_filename: str = None) -> None:
+class ExpressedSequences(BiologicalSequence):
+    def __init__(self, seq: str) -> None:
+        self.seq = seq.upper()
+        self.letters = set(self.seq)
+        self._alphabet = None
+
+    def __len__(self) -> int:
+        return len(self.seq)
+
+    def __getitem__(self, index: int) -> "Self":
+        return self.__class__(self.seq[index])
+
+    def __str__(self) -> str:
+        return self.seq
+
+    def check_alphabet(self) -> bool:
+        if self._alphabet is None:
+            raise NotImplementedError
+        return all([x in self._alphabet for x in self.letters]) and not (
+            "U" in self.letters and "T" in self.letters
+        )
+
+
+class NucleicAcidSequence(ExpressedSequences):
+    def __init__(self, seq: str) -> None:
+        super().__init__(seq)
+        self._alphabet = {"A", "T", "G", "C", "U"}
+        self._complement_table = None
+
+    def complement(self) -> "Self":
+        if self._complement_table is None:
+            raise NotImplementedError
+        complemented = []
+        for nucleotide in self.seq:
+            complemented.append(self._complement_table[nucleotide])
+        return self.__class__("".join(complemented))
+
+    def gc_content(self) -> int:
+        return (self.seq.count("G") + self.seq.count("C")) / len(self.seq) * 100
+
+
+class DNASequence(NucleicAcidSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq)
+        self._complement_table = {"T": "A", "A": "T", "C": "G", "G": "C"}
+        self._transcribe_table = {
+            "C": "C",
+            "G": "G",
+            "A": "A",
+            "T": "U",
+        }
+
+    def transcribe(self) -> "RNASequence":
+        transcribed = []
+        for nucleotide in self.seq:
+            transcribed.append(self._transcribe_table[nucleotide])
+        return RNASequence("".join(transcribed))
+
+
+class RNASequence(NucleicAcidSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq)
+        self._complement_table = {"A": "U", "u": "A", "C": "G", "G": "C"}
+
+
+class AminoAcidSequence(ExpressedSequences):
+    def __init__(self, seq: str) -> None:
+        super().__init__(seq)
+        self._alphabet = {
+            "A",
+            "G",
+            "D",
+            "L",
+            "N",
+            "P",
+            "C",
+            "Y",
+            "S",
+            "I",
+            "H",
+            "W",
+            "E",
+            "F",
+            "R",
+            "T",
+            "V",
+            "K",
+            "M",
+            "Q",
+        }
+        self._positive_aa = {"R", "K", "H"}
+        self._negative_aa = {"D", "E"}
+
+    def define_charge(self) -> Dict[str, int]:
+        positive_count = 0
+        negative_count = 0
+        neutral_count = 0
+        for aa in self.seq:
+            if aa in self._positive_aa:
+                positive_count += 1
+            elif aa in self._negative_aa:
+                negative_count += 1
+            else:
+                neutral_count += 1
+        result = {
+            "Positive": positive_count,
+            "Negative": negative_count,
+            "Neutral": neutral_count,
+        }
+        return result
+
+
+def filter_fastq(
+    input_path: str,
+    output_filename: str,
+    gc_bounds: Union[int, float, Tuple[Union[int, float], Union[int, float]]] = (
+        0,
+        100,
+    ),
+    length_bounds: Union[int, Tuple[int, int]] = (0, 2**32),
+    quality_threshold: int = 0,
+) -> None:
     """
     Filters appropriate sequences.
 
@@ -29,109 +170,21 @@ def filter_fastq(input_path: str, gc_bounds: Union[int, float, Tuple[Union[int, 
 
     Saves filtered sequences in a fastq file named input_path/output_filename.
     """
-    seqs = fastq_module.read_fastq(input_path)
+    records = SeqIO.parse(input_path, "fastq")
     if isinstance(gc_bounds, int) or isinstance(gc_bounds, float):
         gc_bounds = (0, gc_bounds)
     if isinstance(length_bounds, int) or isinstance(length_bounds, float):
         length_bounds = (0, length_bounds)
-    seqs_filtered = {}
-    for name, seq in seqs.items():
-        seq_length = len(seq[0])
+    records_filtered = []
+    for rec in records:
+        seq_length = len(rec)
         if seq_length < length_bounds[0] or seq_length > length_bounds[1]:
             continue
-        gc_count = fastq_module.count_gc(seq[0])
+        gc_count = gc_fraction(rec.seq) * 100
         if gc_count < gc_bounds[0] or gc_count > gc_bounds[1]:
             continue
-        mean_quality = fastq_module.calculate_mean_quality(seq[1])
+        mean_quality = np.mean(rec.letter_annotations["phred_quality"])
         if mean_quality < quality_threshold:
             continue
-        seqs_filtered[name] = seq
-    if output_filename is None:
-        output_filename = os.path.basename(input_path)
-    else:
-        output_filename += '.fastq'
-    fastq_module.write_fastq(output_filename, seqs_filtered)
-
-
-def protein_tool(*args: str) -> Union[str, List[Union[Dict[str, int], str]]]:
-    """
-    Receives a request from the user and runs the desired function.
-
-    Arguments
-    ----------
-    seq : str
-        Amino acid sequences.
-    operation : str
-        Type of user's request.
-
-    Returns
-    -------
-    str
-        If a single sequence is supplied, outputs the result as a string or or identify a problem with a specific sequence.
-    list
-        If several sequences are supplied, outputs the result as a list.
-    """
-    *seqs, operation = args
-    operations = {'one letter': protein_module.change_abbreviation, 'RNA': protein_module.to_rna, 'DNA': protein_module.to_dna, 'charge': protein_module.define_charge, 'polarity': protein_module.define_polarity}
-    output = []
-    for seq in seqs:
-        seq_check = protein_module.is_correct_seq(seq.upper())
-        if seq_check:
-            function_output = operations[operation](seq.upper())
-            output.append(function_output)
-        else:
-            print(f'Something wrong with {seq}', file=sys.stderr)
-            continue
-    if len(output) == 1 and (operation == 'RNA' or operation == 'DNA' or operation == 'one letter'):
-        return ''.join(output)
-    else:
-        return output
-
-
-def rna_dna_tool(*args: List[str]) -> List[Union[bool, int, str]]:
-    """
-    Processes incoming sequences with the specified command.
-
-    Arguments
-    ----------
-    seq : List[str]
-        Nucleotide sequences.
-    operation : str
-        Command name.
-
-    Returns
-    -------
-    str
-        If a single sequence is supplied, outputs the result as a string or or identify a problem with a specific sequence.
-    list
-        If several sequences are supplied, outputs the result as a list.
-    """
-    *sequences_list, command = args
-    sequences = []
-    for sequence in sequences_list:
-        sequence_low = sequence.lower()
-        if ('u' in sequence_low and 't' in sequence_low):
-            print(f'{sequence} is not NA. Deleted.')
-            continue
-        if not all([x in NUCLEOTIDES for x in sequence_low]):
-            print(f'{sequence} is not NA. Deleted.')
-            continue
-        sequences.append(sequence)
-    match command:
-        case 'transcribe':
-            result = dna_module.transcribe(sequences)
-        case 'reverse':
-            result = dna_module.reverse(sequences)
-        case 'complement':
-            result = dna_module.complement(sequences)
-        case 'reverse_complement':
-            result = dna_module.reverse_complement(sequences)
-        case 'is_palindrome':
-            result = dna_module.is_palindrome(sequences)
-        case 'length':
-            result = dna_module.length(sequences)
-        case 'is_dna':
-            result = dna_module.is_dna(sequences)
-        case _:
-            raise ValueError("The specified command is invalid!")
-    return result[0] if len(result) == 1 else result
+        records_filtered.append(rec)
+    SeqIO.write(records_filtered, output_filename, "fasta")
