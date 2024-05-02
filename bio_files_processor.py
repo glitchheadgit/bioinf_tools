@@ -9,7 +9,9 @@ from dataclasses import dataclass
 from typing import List
 
 
-def convert_multiline_fasta_to_oneline(input_fasta: str, output_fasta: str = None) -> None:
+def convert_multiline_fasta_to_oneline(
+    input_fasta: str, output_fasta: str = None
+) -> None:
     """
     Converts multiline fasta to oneline fasta.
 
@@ -23,23 +25,25 @@ def convert_multiline_fasta_to_oneline(input_fasta: str, output_fasta: str = Non
     if output_fasta is None:
         output_fasta = os.path.basename(input_fasta)
     else:
-        output_fasta += '.fasta'
+        output_fasta += ".fasta"
     with open(input_fasta) as file_input:
-        with open(output_fasta, 'w') as file_output:
+        with open(output_fasta, "w") as file_output:
             seq = []
             for line in file_input:
-                if line.startswith('>'):
+                if line.startswith(">"):
                     if seq:
-                        file_output.write(''.join(seq) + '\n')
+                        file_output.write("".join(seq) + "\n")
                     seq = []
                     file_output.write(line)
                 else:
                     seq.append(line.strip())
             else:
-                file_output.write(''.join(seq))
+                file_output.write("".join(seq))
 
 
-def select_gene_from_gbk(input_gbk: str, target_gene: str, n_before: int, n_after: int) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+def select_gene_from_gbk(
+    input_gbk: str, target_gene: str, n_before: int, n_after: int
+) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
     """
     Selects genes around gene of interest in gbk file.
 
@@ -63,16 +67,16 @@ def select_gene_from_gbk(input_gbk: str, target_gene: str, n_before: int, n_afte
         genes_after = n_after * [None]
         while True:
             line = file_input.readline().strip()
-            if line == '':
+            if line == "":
                 return (None, None)
-            if line.startswith('/gene'):
+            if line.startswith("/gene"):
                 if target_gene in line:
                     break
-                gene = line[7:-1] + f'_before_{target_gene}'
+                gene = line[7:-1] + f"_before_{target_gene}"
                 seq = None
                 while seq is None:
                     line = file_input.readline().strip()
-                    if line.startswith('/translation'):
+                    if line.startswith("/translation"):
                         subseqs = []
                         subseqs.append(line[1:].strip('translation="'))
                         while True:
@@ -81,19 +85,21 @@ def select_gene_from_gbk(input_gbk: str, target_gene: str, n_before: int, n_afte
                                 subseqs.append(line[:-1])
                                 break
                             subseqs.append(line)
-                        seq = ''.join(subseqs)
+                        seq = "".join(subseqs)
                 genes_before.append((gene, seq))
                 del genes_before[0]
         while True:
             line = file_input.readline().strip()
-            if line == '':
-                return [gene for gene in genes_before if not gene is None], [gene for gene in genes_after if not gene is None]
-            if line.startswith('/gene'):
-                gene = line[7:-1] + f'_after_{target_gene}'
+            if line == "":
+                return [gene for gene in genes_before if not gene is None], [
+                    gene for gene in genes_after if not gene is None
+                ]
+            if line.startswith("/gene"):
+                gene = line[7:-1] + f"_after_{target_gene}"
                 seq = None
                 while seq is None:
                     line = file_input.readline().strip()
-                    if line.startswith('/translation'):
+                    if line.startswith("/translation"):
                         subseqs = []
                         subseqs.append(line[1:].strip('translation="'))
                         while True:
@@ -102,14 +108,20 @@ def select_gene_from_gbk(input_gbk: str, target_gene: str, n_before: int, n_afte
                                 subseqs.append(line[:-1])
                                 break
                             subseqs.append(line)
-                        seq = ''.join(subseqs)
+                        seq = "".join(subseqs)
                 genes_after.append((gene, seq))
                 del genes_after[0]
                 if not None in genes_after:
                     return genes_before, genes_after
 
 
-def select_genes_from_gbk_to_fasta(input_gbk: str, genes: List[str], n_before: int, n_after: int, output_fasta: str = None) -> None:
+def select_genes_from_gbk_to_fasta(
+    input_gbk: str,
+    genes: List[str],
+    n_before: int,
+    n_after: int,
+    output_fasta: str = None,
+) -> None:
     """
     Writes output of select_gene_from_gbk to fasta file
 
@@ -127,22 +139,28 @@ def select_genes_from_gbk_to_fasta(input_gbk: str, genes: List[str], n_before: i
         Name of output file. If not specified name will be the same as input file.
     """
     if output_fasta is None:
-        output_fasta = os.path.basename(input_gbk).split('.')[0] + '_target_proteins.fasta'
+        output_fasta = (
+            os.path.basename(input_gbk).split(".")[0] + "_target_proteins.fasta"
+        )
     else:
-        output_fasta += '.fasta'
+        output_fasta += ".fasta"
     for gene in genes:
-        with open(output_fasta, 'w') as file:
+        with open(output_fasta, "w") as file:
             for target in genes:
-                genes_before, genes_after = select_gene_from_gbk(input_gbk, target, n_before, n_after)
+                genes_before, genes_after = select_gene_from_gbk(
+                    input_gbk, target, n_before, n_after
+                )
                 for gene, seq in genes_before:
-                    file.write('>' + gene + '\n')
-                    file.write(seq + '\n')
+                    file.write(">" + gene + "\n")
+                    file.write(seq + "\n")
                 for gene, seq in genes_after:
-                    file.write('>' + gene + '\n')
-                    file.write(seq + '\n')
+                    file.write(">" + gene + "\n")
+                    file.write(seq + "\n")
 
 
-def change_fasta_start_pos(input_fasta: str, shift: int, output_fasta: str = 'shifted') -> None:
+def change_fasta_start_pos(
+    input_fasta: str, shift: int, output_fasta: str = "shifted"
+) -> None:
     """
     Changes fasta start position.
 
@@ -155,15 +173,15 @@ def change_fasta_start_pos(input_fasta: str, shift: int, output_fasta: str = 'sh
     output_fasta:
         Path to output file
     """
-    with open(input_fasta, 'r') as file_input:
-        with open(output_fasta + '.fasta', 'w') as file_output:
+    with open(input_fasta, "r") as file_input:
+        with open(output_fasta + ".fasta", "w") as file_output:
             file_output.write(file_input.readline())
             seq = file_input.readline().strip()
             seq = seq[shift:] + seq[:shift]
             file_output.write(seq)
 
 
-def parse_blast_output(input_file: str, output_file: str = 'blast_proteins') -> None:
+def parse_blast_output(input_file: str, output_file: str = "blast_proteins") -> None:
     """
     Parses blast output. Saves list of the most accurate proteins on each query.
 
@@ -176,13 +194,13 @@ def parse_blast_output(input_file: str, output_file: str = 'blast_proteins') -> 
     """
     proteins = set()
     with open(input_file) as file_input:
-        with open(output_file + '.txt', 'w') as file_output:
+        with open(output_file + ".txt", "w") as file_output:
             for line in file_input:
-                if line.startswith('Alignments'):
+                if line.startswith("Alignments"):
                     file_input.readline()
                     protein = file_input.readline()[1:]
-                    if 'MULTISPECIES' in protein:
-                        protein = protein.strip('MULTISPECIES: ')
+                    if "MULTISPECIES" in protein:
+                        protein = protein.strip("MULTISPECIES: ")
                     proteins.add(protein)
             for protein in sorted(proteins):
                 file_output.write(protein)

@@ -5,15 +5,22 @@ from multiprocessing import Pool
 
 
 class RandomForestClassifierCustom(BaseEstimator):
+    """
+    Custom RF classifier that supports parallel fit and predict
+    """
     def __init__(
-        self, random_state, n_estimators=10, min_samples_leaf=1, max_depth=None, max_features=None
+        self,
+        random_state,
+        n_estimators=10,
+        min_samples_leaf=1,
+        max_depth=None,
+        max_features=None,
     ):
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.max_features = max_features
         self.random_state = random_state
         self.min_samples_leaf = min_samples_leaf
-
         self.trees = []
         self.feat_ids_by_tree = []
 
@@ -33,7 +40,6 @@ class RandomForestClassifierCustom(BaseEstimator):
             random_state=self.random_state,
         )
         tree.fit(X_sampled, y_sampled)
-
         return tree, feat_ids
 
     def fit(self, X, y, n_jobs=1):
@@ -43,7 +49,6 @@ class RandomForestClassifierCustom(BaseEstimator):
             self.trees, self.feat_ids_by_tree = map(
                 list, zip(*pool.map(self._fit, args))
             )
-
         return self
 
     def _predict_proba(self, args):
@@ -63,5 +68,4 @@ class RandomForestClassifierCustom(BaseEstimator):
     def predict(self, X, n_jobs=1):
         proba = self.predict_proba(X, n_jobs)
         prediction = np.argmax(proba, axis=1)
-
         return prediction

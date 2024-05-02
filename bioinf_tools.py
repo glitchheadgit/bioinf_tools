@@ -4,19 +4,14 @@ import sys
 import time
 import requests
 import re
+
 from abc import ABC, abstractmethod
-from typing import (
-    Union,
-    Dict,
-    Tuple,
-    Set
-)
+from typing import Union, Dict, Tuple, Set
 from typing_extensions import Self
 from io import StringIO
 from typing import Dict, List, Callable, Union, Optional
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
-
 from Bio import SeqIO
 from Bio.SeqUtils import gc_fraction
 
@@ -399,14 +394,17 @@ def run_genscan(
     i = 0
     for exon in exons:
         if i == 0:
-            sequence_number = '1'
+            sequence_number = "1"
             i += 1
             exons_list.append([])
             continue
-        if sequence_number != exon[0].split('.')[0]:
-            sequence_number = exon[0].split('.')[0]
+        if sequence_number != exon[0].split(".")[0]:
+            sequence_number = exon[0].split(".")[0]
             i = 1
             exons_list.append([])
+        if exon[0] == "NO":
+            print("No exons found")
+            return None
         exons_list[-1].append({"index": i, "start": int(exon[3]), "end": int(exon[4])})
         i += 1
     introns_list = []
