@@ -9,10 +9,9 @@ from typing import (
     Union,
     Dict,
     Tuple,
-    Set,
-    Self
-)  # для импорта Self нужен python >= 3.11 или используйте импорт ниже
-# from typing_extensions import Self
+    Set
+)
+from typing_extensions import Self
 from io import StringIO
 from typing import Dict, List, Callable, Union, Optional
 from dataclasses import dataclass
